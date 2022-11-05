@@ -1,0 +1,193 @@
+
+# 10. 우발적 강력범죄 발생가능 입지 분석 (지도 시각화) ####
+
+'''
+#서울시 행정구역 지도화 : "서울시 행정구역 시군구 경계도"
+seoul_map <-readOGR("2017/TL_SCCO_SIG.shp") 
+slotNames(seoul_map)
+seoul_map@polygons[[1]]@Polygons[[1]]@coords[1:4,]
+
+seoul_map@proj4string
+
+ls_crs <- list(wgs84= "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs" )
+
+seoul_map = spTransform(seoul_map, CRSobj = CRS(ls_crs$wgs84))
+seoul_map@proj4string
+## Deprecated Proj.4 representation: +proj=longlat +datum=WGS84 +no_defs 
+
+seoul_map@polygons[[1]]@Polygons[[1]]@coords[1:4,]
+##          [,1]     [,2]
+## [1,] 127.0087 37.58047
+## [2,] 127.0087 37.58045
+## [3,] 127.0088 37.58045
+## [4,] 127.0089 37.58043
+
+df_seoul_map <- seoul_map@data
+head(df_seoul_map,2)
+
+df_map = fortify(seoul_map)
+head(df_map)
+
+ggplot(data = df_map,
+       aes(x=long, y=lat,
+           group = group)) +
+  geom_polygon(fill = "#FFFFFF",
+               color = "#000000", 
+               size = 1.2) +
+  theme_bw()
+'''
+
+
+#1) 서울 법정동 지도 시각화
+
+#읍면동
+seoul_EMD <-readOGR("2015/TC_SPBE17.shp") 
+slotNames(seoul_EMD)
+
+'''
+seoul_EMD@polygons[[1]]@Polygons[[1]]@coords[1:4,]
+seoul_EMD@proj4string    ## CRS 클래스 확인
+'''
+
+ls_crs <- list(wgs84= "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs" )
+
+seoul_EMD = spTransform(seoul_EMD, CRSobj = CRS(ls_crs$wgs84))
+## 국제 표준 기준 좌표로 변환
+
+'''
+seoul_EMD@proj4string 
+## Deprecated Proj.4 representation: +proj=longlat +datum=WGS84 +no_defs 
+seoul_EMD@polygons[[1]]@Polygons[[1]]@coords[1:4,]   ## 좌표 변환 여부 확인
+'''
+
+df_seoul_EMD <- seoul_EMD@data
+head(seoul_EMD,2)
+
+df_seoul_EMD = fortify(seoul_EMD, region = "EMD_CD")
+head(df_seoul_EMD)
+
+
+#법정동 행정코드 결합
+EMD_Code <- read.csv("법정동_행정코드.csv") 
+names(EMD_Code) <- c("id", "id_name")
+
+df_seoul_EMD <- merge(df_seoul_EMD, EMD_Code, by = "id")
+
+
+#2) CCTV 위치 위치 표시
+ggplot()+geom_polygon(data =  df_seoul_EMD, aes(x=long, y=lat, group=group, color = id), fill="#FFFFFF", size = 1.2)+ theme(legend.position = "none")+
+  geom_point(data = cctv005, aes(x=경도, y=위도), color = "red")
+
+
+#3) 골목길 위치 표시
+
+#도로 좌표 구하기
+centroid_shp <- st_centroid(road_shp)
+head(centroid_shp)
+XY <- st_coordinates(centroid_shp)
+centroid_road <- cbind(centroid_shp, XY)
+
+#X,Y -> 위도,경도
+#CRS function 생성
+
+convertCRS <- function(long, lat, from.crs, to.crs){
+  xy <- data.frame(long=long, lat=lat)
+  coordinates(xy) <- ~long+lat
+  
+  from.crs <- CRS(from.crs)
+  from.coordinates <- SpatialPoints(xy, proj4string = from.crs)
+  
+  to.crs <- CRS(to.crs)
+  changed <- as.data.frame(SpatialPoints(spTransform(from.coordinates, to.crs)))
+  names(changed) <- c("long", "lat")
+  
+  return(changed)
+}
+
+from.crs <- "+proj=tmerc +lat_0=38 +lon_0=127 +k=1 +x_0=200000 +y_0=600000 +ellps=GRS80 +units=m +no_defs"
+#"+proj=tmerc +lat_0=38 +lon_0=127 +k=1 +x_0=200000 +y_0=600000 +ellps=GRS80 +units=m +no_defs" 
+#"+prof=termc +lat_0=38 +lon_0=127.5 +k=0.9996 +x_0=1000000 +y_0=2000000 +ellps=GRS80 +units=m +no_defs"
+to.crs <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+
+#X,Y좌표만 뽑아서 coord 생성
+coord <- data.frame(grs.long=centroid_road$X, grs.lat=centroid_road$Y)
+str(coord)
+head(coord)
+
+#위도 경도 변환
+coord <- cbind(coord, convertCRS(coord$grs.long, coord$grs.lat, from.crs, to.crs))
+head(coord)
+
+#join 기준 변수 만들기
+centroid_road_2 <- centroid_road %>% mutate(index=paste0(X,',',Y))
+head(centroid_road_2)
+coord2 <- coord %>% mutate(index = paste0(grs.long, ',', grs.lat)) %>% select(index, long, lat)
+
+final_road <- left_join(centroid_road_2, coord2, by="index") %>% select(-"index")
+head(final_road)
+
+
+#final_road 에서 골목길만 추출
+names(final_road)
+road_map <- final_road %>% select(
+  BSI_INT, SIG_CD, RBP_CN, REP_CN,
+  WDR_RD_CD, RN, RN_CD, ROAD_BT, ROAD_CD, ROAD_LT, long, lat
+)
+road_map <- data.frame(road_map)
+colnames(road_map) <- c("기초간격", "시군구코드", "기점", "종점",
+                     "광역도로구분코드", "도로명", "도로명코드", 
+                     "도로폭", "도로코드", "도로길이", "경도", "위도", "geometry")
+road_map <- road_map %>% relocate(도로길이, .after = 도로폭)
+road_map <- road_map %>% relocate(광역도로구분코드, .before = 도로폭)
+road_map <- road_map %>% relocate(종점, .after = 도로코드)
+road_map <- road_map %>% relocate(기점, .after = 도로코드)
+road_map <- road_map %>% relocate(기초간격, .before = 도로폭)
+str(road_map$시군구코드)
+table(road_map$광역도로구분코드)
+
+
+road_map <- road_map %>% filter(광역도로구분코드 != 2)
+road_map <- road_map %>%  mutate(막다른도로 = case_when(도로폭 <= 6 & 도로길이 >= 35 ~ "1번", 
+                                                도로폭 <= 3  & 도로길이 < 35 ~ "2번",
+                                                도로폭 <= 2  & 도로길이 < 10 ~ "3번"))
+road_map <- road_map %>% filter(도로폭 <= 4)
+road_map <- road_map %>% relocate(막다른도로, .after = 도로길이)
+
+
+
+final_road_map <- full_join(road_map, SGG_code, by = "시군구코드")
+final_road_map <- final_road_map %>% relocate(자치구명, .after = 시군구코드)
+final_road_map[is.na(final_road_map$자치구명), ]
+
+
+final_road_map$행정동명 <- substr(final_road_map$기점, 1, 4)
+final_road_map <- final_road_map %>% relocate(행정동명, .after = 자치구명)
+final_road_map[which(str_detect(final_road_map$행정동명, "동") == FALSE), 3]
+final_road_map[which(str_detect(final_road_map$행정동명, "동") == FALSE), 3] <- NA
+
+
+which(final_road_map$자치구명%in% c("강북구", "금천구", "광진구"))
+final_road_map <- final_road_map[-c(39796, 39797, 39798), ]
+
+final_road_map$자치구명 <- ifelse(final_road_map$시군구코드 == "11215", "광진구", final_road_map$자치구명)
+final_road_map$자치구명 <- ifelse(final_road_map$시군구코드 == "11305", "강북구", final_road_map$자치구명)
+final_road_map$자치구명 <- ifelse(final_road_map$시군구코드 == "11545", "금천구", final_road_map$자치구명)
+final_road_map <- final_road_map %>% filter(!is.na(final_road_map$자치구명))
+
+#위도, 경도도 같이 불러와져야하기 때문에 행정동명 없는 데이터 수정해서 불러오는 건 하지 않음
+
+
+# 2) 유동인구 많은 구, 행정동 내의 골목길 위치 표시하기
+
+ys_dong <- seoul_EMD %>% filter(id_name == "역삼동")
+ys_road <- final_road_map %>% filter(행정동명 == "역삼동 ")
+ys_cctv <- cctv_005 %>% filter(행정동명 == "역삼1동")
+
+ys_road$경도 <- as.numeric(ys_road$경도)
+ys_road$위도 <- as.numeric(ys_road$위도)
+ys_cctv$경도 <- as.numeric(ys_cctv$경도)
+ys_cctv$위도 <- as.numeric(ys_cctv$위도)
+
+ggplot()+geom_polygon(data = ys_dong, aes(x=long, y=lat, group=group, color=id), fill="#FFFFFF", size = 1.2) + theme(legend.position = "none")+ geom_point(data = ys_cctv, aes(x=경도, y=위도), color="blue")
+
+write.csv(road2, "road2.csv")
