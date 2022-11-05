@@ -39,11 +39,11 @@ df_sgg_kmclust <- df_sgg_kmclust %>% arrange(cluster)
    cluster별 응집도가 시각적으로 높다고 판단되는 K = 4 채택
 '''
 
-avg_sil <- function(k, data) {
+sil_avg <- function(k, data) {
   kmclust_n <- kmeans(df_count_sgg[, -c(1, 6)], centers = k)
   silhouette <- silhouette(kmclust_n$cluster, dist(df_count_sgg[, -c(1, 6)]))
-  avgSil <- mean(silhouette[, 3])
-  return(avgSil)
+  silAvg <- mean(silhouette[, 3])
+  return(silAvg)
 }
 kclusters <-  2:5 
 
@@ -51,12 +51,11 @@ result_n <- data.frame( k = kclusters,
                         silAvg = rep(NA, length(kClusters)) ) 
 
 for(i in 1:length(kclusters)) {
-    resultForEachK$silAvg[i] <- avg_sil(kclusters[i], df_count_sgg[, -c(1, 6)])
+    result_n$silAvg[i] <- sil_avg(kclusters[i], df_count_sgg[, -c(1, 6)])
 }
-plot(resultForEachK$k, result_n$silAvg,
-      type = "b", pch = 19, frame = FALSE, 
-      xlab = "Number of clusters' K",
-      ylab = "Average of Silhouettes")
+plot(result_n$k, result_n$silAvg,
+     type = "b", pch = 19, frame = FALSE, 
+     xlab = "Number of clusters' K", ylab = "Average of Silhouettes")
 
 '''
     [실루엣 분석]
@@ -82,6 +81,12 @@ df_sgg_hclust <- df_count_sgg
 table(fit, df_sgg_hclust$자치구명)
 df_sgg_hclust$cluster <- fit
 df_sgg_hclust <- df_sgg_hclust %>% arrange(cluster)
+
+'''
+    [계층적 군집분석 메소드]
+    거리 유사도 = 유클리디안 거리(L2 distance)
+    알고리즘 = 군집 내 오차제곱합(SSE, 정보의 손실 최소화)에 근거를 두고 군집들을 병합시키는 와드연결법
+'''
 
 
 
