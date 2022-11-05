@@ -278,32 +278,34 @@ print(road2 %>% group_by(행정동명) %>% summarise(count = n()), n = 356)
 # 5. 서울시 CCTV 현황 공간데이터 2019 [cctv_n dataframe] ####
 
 cctv_shp = st_read("2019/TL_CCTV_ST_2019.shp")
-# [sbh -> csv]
 cctv_001 <- cctv_shp %>% select(OBJECTID, CCTV_SE,  ADSTRD_ID, INLPS_SE, PURPS_SE, LO, LA, RDNMADR_DC, LMN_ADR_DC, LC_DC)
-# [#필요한 데이터만 추출]
-# 일련번호 | CCTV_구분 | 행정동ID | 설치장소 구분 | 목적 구분 | 경도 | 위도 | 도로명주소 | 지번주소 | 위치_설명 | 
-# (1-objectid, 9-lo, 10-la, 11-rdnmard_dc, 12-lmn_adr_dc, 16-lc_dc, 19-emd_id, 21-adstrd_id)
 
 cctv_002 <- cctv_001[!is.na(cctv_001$LMN_ADR_DC),]
-# [결측치 & 시군구,행정동명 없는 데이터 제거 후 시군구, 행정동 명 결합]
-# [NA값 제거]
-# [경기도 행 제거]
 cctv_002 <- cctv_002[-grep("경기도", cctv_002$LMN_ADR_DC),]
-# [코드로 되어있는 행 데이터 제거]
 cctv_002 <- cctv_002[-grep("C", cctv_002$LMN_ADR_DC),]
-# [50048행 데이터 제거]
-# length(grep("C", cctv_002$LMN_ADR_DC)) 
-# [2308개]
+length(grep("C", cctv_002$LMN_ADR_DC)) 
+  # [2308개]
 
 table(cctv_002$CCTV_SE)
 table(cctv_002$INLPS_SE)
 table(cctv_002$PURPS_SE)
 cctv_sbn = st_drivers("2019/CP_BD_2016_16.sbn")
 rm(cctv_sbn)
-# [GRP CODE와 비교 필요하나 코드북에 상세설명 미기재]
 cctv_002 <- cctv_002[, -c(2, 4, 5)]
-# [CCTV_구분 | 설치장소 구분 | 목적 구분 열 제거]
 cctv_002 <- data.frame(cctv_002)
+
+''' 
+    [데이터 파일 변환 후 필요한 데이터 추출]
+    sbh -> csv
+    일련번호 | CCTV_구분 | 행정동ID | 설치장소 구분 | 목적 구분 | 경도 | 위도 | 도로명주소 | 지번주소 | 위치_설명
+    [데이터 행 삭제]
+    결측치 & 시군구, 행정동명 없는 데이터 제거 후 시군구, 행정동명 결합
+    경기도 행 제거
+    코드로 되어있는 행 제거
+    
+    [CCTV_구분 | 설치장소 구분 | 목적 구분 열 제거]
+    GRP CODE와 비교 필요하나 코드북에 상세설명 미기재
+'''
 
 colnames(cctv_002) <- c("일련번호", "행정동코드", "경도", "위도", "도로명주소", "지번주소", "위치_설명", "XY좌표")
 str(cctv_002$행정동코드)
@@ -314,10 +316,8 @@ cctv_003 <- full_join(cctv_002, sigunguCode, by = "행정동코드")
 cctv_003 <- cctv_003 %>% relocate(행정동명, .after = 행정동코드)
 cctv_003 <- cctv_003 %>% relocate(시군구코드, .before = 행정동코드)
 
-
 data.na <- cctv_003 %>% select(시군구코드, 행정동코드, 행정동명)
 md.pattern(data.na)
-
 
 SGG_code <- read.csv("SGG_data.csv")
 SGG_code$sgg <- paste(SGG_code$C_SIDO_CD, SGG_code$C_SGG_CD, "0")
@@ -325,11 +325,14 @@ SGG_code$sgg <- str_replace(SGG_code$sgg, ' ', '')
 SGG_code$sgg <- str_replace(SGG_code$sgg, ' ', '')
 SGG_code <- SGG_code[, -c(1:2)]
 
-# [paste : 문자끼리 붙여주는 함수]
-# [-열 끼리 문자를 붙임]
-# [-띄어쓰기가 생기는 문제가 발생함]
-# [str_replace : 처음으로 매칭이 되는 문자의 값만 치환과 삭제를 해주는 함수]
-# [-space(' ')를 nonspace('')로 바꿔줌]
+'''
+    [SGG_code 행정동 코드북 데이터의 시군구 문자열 수정]
+    paste : 문자끼리 붙여주는 함수
+    - 열 끼리 문자를 붙임
+    - 띄어쓰기가 생기는 문제가 발생함
+    str_replace : 처음으로 매칭이 되는 문자의 값만 치환과 삭제를 해주는 함수
+    - space(" ")를 nonspace("")로 바꿔줌
+'''
 
 names(SGG_code)
 colnames(SGG_code) <- c("시도", "자치구명",  "시군구코드")
@@ -349,25 +352,25 @@ cctv_sgg <- cctv_003 %>% group_by(자치구명) %>% summarise(count = n())
 cctv_003$시군구행정동명 <- substr(cctv_003$지번주소, 1, 14)
 cctv_003$시도 <- substr(cctv_003$시군구행정동명, 1, 5)
 table(cctv_003[,12] == "인천광역시")
-# [인천광역시 138개 행 데이터 제거]
+    # [인천광역시 138개 행 데이터 제거]
 cctv_003 <- cctv_003[-which(cctv_003[, 12] == "인천광역시"), ]
 
 cctv_003 %>% group_by(시도) %>% summarise(count = n())
 cctv_003$시군구행정동명 <- ifelse(cctv_003$시도 != "서울특별시", NA, cctv_003$시군구행정동명)
 table(is.na(cctv_003$시군구행정동명))
-# [6251개 행 데이터는 지번주소가 시군구 행정동으로 되어있지 않은 데이터]
+    # [6251개 행 데이터는 지번주소가 시군구 행정동으로 되어있지 않은 데이터]
 cctv_003 <- cctv_003[, -12]
 
 cctv_sgg_hjd <- cctv_003 %>% group_by(시군구행정동명) %>% summarise(count = n())
 
 table(is.na(cctv_003$자치구명))
-# [10546개]
+   # [자치구명 NA's 10546개]
 table(is.na(cctv_003$행정동명))
-# [10546개]
+   # [행정동명 NA's 10546개]
 
 cctv_004 <- cctv_003 %>% filter(is.na(cctv_003$자치구명) & is.na(cctv_003$행정동명))
 cctv_003 <- cctv_003 %>% filter(!is.na(cctv_003$자치구명) & !is.na(cctv_003$행정동명))
-# [자치구명 및 행정동명이 NA 아닌 DF (cctv_003), NA DF 분리 (cctv_004)]
+   # [자치구명 및 행정동명이 NA 아닌 DF (cctv_003), NA DF 분리 (cctv_004)]
 
 
 # [지번주소 추출하여 자치구명(26)으로 결측값 대체] ####
