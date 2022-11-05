@@ -206,11 +206,14 @@ ggplot()+geom_polygon(data = sl_dong, aes(x=long, y=lat, group=group, color=id),
  geom_point(data = sl_cctv, aes(x=경도, y=위도), color="blue") +
  geom_point(data = sl_road, aes(x=lat, y=long, color="red")
 
+
 '''
 # ERROR
+ 시각화 결과 서울시 지도 내 CCTV 위치에 대한 (경도, 위도) 좌표는 표시되었으나,
+ 골목길 위치에 대한 (경도, 위도) 좌표는 서울시 지도 밖에 표시되었다.
+
+# TRIAL 1. centroid 대신 MINX, MINY 좌표로 진행
+ 
 
 '''
-
-
-# TRIAL 1
 
