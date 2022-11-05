@@ -16,11 +16,9 @@ fviz_nbclust(df_count_sgg[, -c(1, 6, 7)], kmeans,
 iVAT(df_count_sgg[, -c(1, 6)])
 
 kmclust <- kmeans(df_count_sgg[, -c(1, 6)], 4)
+    # [k = 3, k = 4로 각 군집분석 수행]
 kmclust$centers
 kmclust$size
-kmclust$withinss/kmclust$betweenss
-kmclust$withinss
-kmclust$betweenss
 
 distance <- dist(df_count_sgg[, -c(1, 6)], method= "euclidean")
 sil <- silhouette(kmclust$cluster, distance)
@@ -32,40 +30,41 @@ df_sgg_kmclust <- df_count_sgg
 df_sgg_kmclust$cluster <- kmclust$cluster
 df_sgg_kmclust <- df_sgg_kmclust %>% arrange(cluster)
 
+'''
+   [k-means 군집분석 변수]
+   cctv수 | KT 야간 유동인구수 | 세로_막다른 도로 수 | 강력범죄발생빈도
 
-#전체 실루엣 계수 평균 구하는 함수 정의
+   [k-means 군집분석의 k값 튜닝]
+   Elbow plot(WSS)에 따르면 k = 3이 최적이나
+   cluster별 응집도가 시각적으로 높다고 판단되는 K = 4 채택
+'''
+
 avg_sil <- function(k, data) {
-  km.res <- kmeans(df_count_sgg[, -c(1, 6)], centers = k)
-  ss <- silhouette(km.res$cluster, dist(df_count_sgg[, -c(1, 6)]))
-  avgSil <- mean(ss[, 3])
+  kmclust_n <- kmeans(df_count_sgg[, -c(1, 6)], centers = k)
+  silhouette <- silhouette(kmclust_n$cluster, dist(df_count_sgg[, -c(1, 6)]))
+  avgSil <- mean(silhouette[, 3])
   return(avgSil)
 }
+kclusters <-  2:5 
 
-#테스트할 군집수
-kClusters <-  2:5 
+result_n <- data.frame( k = kclusters, 
+                        silAvg = rep(NA, length(kClusters)) ) 
 
-#군집수에 따른 전체 실루엣 계수 결과 저장 변수 생성
-resultForEachK <- data.frame(k = kClusters, silAvg = rep(NA, length(kClusters))) 
-
-#전체 실루엣 계수 평균 결과 계산
-for(i in 1:length(kClusters)) {
-    resultForEachK$silAvg[i] <- avg_sil(kClusters[i], data)
+for(i in 1:length(kclusters)) {
+    resultForEachK$silAvg[i] <- avg_sil(kclusters[i], df_count_sgg[, -c(1, 6)])
 }
-
-#결과 그래프로 그리기 
-plot(resultForEachK$k, resultForEachK$silAvg,
+plot(resultForEachK$k, result_n$silAvg,
       type = "b", pch = 19, frame = FALSE, 
-      xlab = "Number of clusters K",
-      ylab = "Average Silhouettes")
-
-
-
-
+      xlab = "Number of clusters' K",
+      ylab = "Average of Silhouettes")
 
 '''
-   [K-means 군집분석 변수]
-   cctv수 | KT 야간 유동인구수 | 세로_막다른 도로 수 | 강력범죄발생빈도
-   cluster의 거리 비유사도가 가시적인 K = 4 채택
+    [실루엣 분석]
+    전체 실루엣 계수 평균을 구하는 사용자 정의 함수 생성
+    테스트할 군집수 2 ~ 5를 kClusters로 설정
+    군집수에 따른 전체 실루엣 계수 결과 저장 변수 생성
+    전체 실루엣 계수 평균 결과 산출
+    실루엣 분석 결과 시각화
 '''
 
 
