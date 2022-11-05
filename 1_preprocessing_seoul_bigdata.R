@@ -135,8 +135,10 @@ ktPop_count_sgg <- ktPopulation %>% group_by(자치구명) %>% summarise(유동�
 '''
     [데이터 컬럼 삭제 목록]
     기준연월 | 성별 | 연령대 | 20시 ~ 4시 외 시간대 제거
+
     [데이터 프레임 수정]
     서울시 행정동별 유동인구 수 합계
+
     [서브 데이터 프레임 생성]
     서울시 자치구별 유동인구 수 합계
 '''
@@ -181,7 +183,7 @@ sigunguCode$시군구코드 <- as.character(sigunguCode$시군구코드)
 colnames(sigunguCode) <- c("행정동코드", "코드", "시군구코드")
 
 SGG_code <- read.csv("SGG_data.csv")
-SGG_code$sgg <- paste(SGG_code$C_SIDO_CD,SGG_code$C_SGG_CD,"0")
+SGG_code$sgg <- paste(SGG_code$C_SIDO_CD, SGG_code$C_SGG_CD, "0")
 SGG_code$sgg <- str_replace(SGG_code$sgg,' ', '')
 SGG_code$sgg <- str_replace(SGG_code$sgg,' ', '')
 SGG_code <- SGG_code[, -c(1:3)]
@@ -205,15 +207,19 @@ road2 <- road2 %>% filter(!is.na(road2$자치구명))
 
 road2_sgg <- road2 %>% group_by(자치구명, 시군구코드) %>% summarise(count = n())
 table(road2$자치구명)
+rm(road1)
+rm(road2_sgg)
 
+road_count_sgg <- road2 %>% group_by(자치구명) %>% summarise(세로_막다른도로수 = n())
 
 '''
     [데이터 파일 변환 후 필요한 데이터 추출]
     shape.file -> csv.file
-    [시군구코드] 
-    [도로명코드]
+    "기초간격", "시군구코드", "기점", "종점",
+    "광역도로구분코드", "도로명", "도로명코드", 
+    "도로폭", "도로코드", "도로길이", "XY좌표"
     
-    [광역도로 구분코드]
+    [광역도로 구분코드] 광역도로 데이터 행 제거
     1. 행정자치부 도로
     2. 광역도로 : 2개 이상의 시도를 통과하는 노선, 대도시권 중장거리 통행 처리 도로
     3. 시군구도로
@@ -223,14 +229,17 @@ table(road2$자치구명)
     1. 폭 2m 이하, 길이 10m 미만
     2. 폭 3m 이하, 길이 10m 이상 ~ 35m 미만
     3. 폭 6m(도시지역) / 폭 4m(읍면지역), 길이 35m 이상
-    NA. 막다른 도로 아닌 
+    NA. 막다른 도로 아닌 도로는 결측치 처리
     
     [건축법상 도로 및 이면/생활도로]
-    4m, 9m -> 우발적 강력범죄 발생예상지역의 도로조건으로 
+    4m, 9m 중 우발적 강력범죄 발생예상지역의 도로조건으로 
     폭 4m 이하 채택
     
-    기점 = 건축법상 도로의 분기점이며,
-    종점 = 건축물의 경계선 아닌 건축허가대상 부지의 경계선
+    [시군구코드북 및 행정동코드북 데이터와 병합] sigunguCode | SGG_code
+    데이터 프레임을 병합하여 자치구명 및 행정동명 각각 추출
+
+    [서브 데이터 프레임 생성]
+    자치구별 막다른 도로 또는 세로(통행이 협소한 골목길)의 빈도수를 집계
 '''
 
 ''' 
@@ -239,18 +248,13 @@ table(road2$자치구명)
     서울시 아닌 지역 제거
 '''
 
-road_count_sgg <- road2 %>% group_by(자치구명) %>% summarise(세로_막다른도로수 = n())
-rm(road1)
-rm(road2_sgg)
-
-# [도로의 기점 변수에서 행정동명 추출]
-
 road2$행정동명 <- substr(road2$기점, 1, 4)
 road2 <- road2 %>% relocate(행정동명, .after = 자치구명)
 road2[which(str_detect(road2$행정동명, "동") == FALSE), 3]
 road2[which(str_detect(road2$행정동명, "동") == FALSE), 3] <- NA
-# [981개 행은 행정동 단위의 기점이 아닌바 결측치 처리]
+  # [981개 행은 행정동 단위의 기점이 아닌바 결측치 처리]
 table(is.na(road2$행정동명))
+
 road2$행정동명 <- substr(road2$기점, 1, 3)
 road2$행정동명 <- paste(road2$행정동명, "동")
 road2$행정동명 <- str_replace(road2$행정동명, " ", "")
@@ -261,6 +265,13 @@ road2$행정동명 <- ifelse(road2$행정동명 == "4.1동", NA, road2$행정동
 road2[which(str_detect(road2$행정동명, "묵동") == TRUE), 3] <- "묵동"
 road2[which(str_detect(road2$행정동명, "필동") == TRUE), 3] <- "필동"
 print(road2 %>% group_by(행정동명) %>% summarise(count = n()), n = 356)
+
+'''
+    [기점 변수를 활용한 결측값인 행정동명 대체]
+    기점 = 건축법상 도로의 분기점이며,
+    종점 = 건축물의 경계선 아닌 건축허가대상 부지의 경계선이므로 
+    기점 변수의 문자열을 슬라이싱하여 서울시 행정동명을 각각 추출
+'''
 
 
 
