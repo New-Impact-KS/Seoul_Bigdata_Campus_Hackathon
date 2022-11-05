@@ -323,5 +323,95 @@ ggplot()+geom_polygon(data = sl_dong, aes(x=long, y=lat, group=group, color=id),
   
 '''
 
+
 #3-2) Google API 이용
- 
+#골목길 위치
+#유동인구 많은 구, 동 : 관악구 신림동
+library(ggmap)
+library(ggplot2)
+library(dplyr)
+road <- read.csv("road2.csv")
+register_google(key = "AIzaSyDMLBeyvYGcL7sRn0usaEIcRHehy5gha1k")
+
+which(is.na(road$기점)==TRUE)
+road <- road[-c(954, 26151, 26161, 26198, 26233, 26274, 26387, 26407, 26426, 26494, 26510, 39767, 39768, 39769),]
+
+road_종로 <- road %>% filter(자치구명 == "종로구")
+road_강서 <- road %>% filter(자치구명 == "강서구")
+road_양천 <- road %>% filter(자치구명 == "양천구")
+road_구로 <- road %>% filter(자치구명 == "구로구")
+road_금천 <- road %>% filter(자치구명 == "금천구")
+road_관악 <- road %>% filter(자치구명 == "관악구")
+road_영등포 <- road %>% filter(자치구명 == "영등포구")
+road_동작 <- road %>% filter(자치구명 == "동작구")
+road_서초 <- road %>% filter(자치구명 == "서초구")
+road_강남 <- road %>% filter(자치구명 == "강남구")
+road_송파 <- road %>% filter(자치구명 == "송파구")
+road_강동 <- road %>% filter(자치구명 == "강동구")
+road_마포 <- road %>% filter(자치구명 == "마포구")
+road_용산 <- road %>% filter(자치구명 == "용산구")
+road_성동 <- road %>% filter(자치구명 == "성동구")
+road_광진 <- road %>% filter(자치구명 == "광진구")
+road_중랑 <- road %>% filter(자치구명 == "중랑구")
+road_동대문 <- road %>% filter(자치구명 == "동대문구")
+road_중구 <- road %>% filter(자치구명 == "중구")
+road_서대문 <- road %>% filter(자치구명 == "서대문구")
+road_은평 <- road %>% filter(자치구명 == "은평구")
+road_성북 <- road %>% filter(자치구명 == "성북구")
+road_강북 <- road %>% filter(자치구명 == "강북구")
+road_도봉 <- road %>% filter(자치구명 == "도봉구")
+road_노원 <- road %>% filter(자치구명 == "노원구")
+
+#관악구
+road_관악_location <- mutate_geocode(data = road_관악, location = 기점, source = 'google')
+
+#geom_point_ver
+관악_map <- get_googlemap('서울 특별시 관악구', maptype = 'roadmap', zoom = 13)
+ggmap(관악_map)+geom_point(data = road_관악_location, aes(x=lon, y=lat), size=2, alpha =0.5, col = 'blue') #alpha : 투명도
+
+#관악구 신림동 
+관악_신림_map <- get_googlemap("서울특별시 관악구 신림동", maptype='roadmap', zoom=14)
+road_관악_신림 <- road_관악 %>% filter(행정동명 == "신림동") 
+road_sl <- mutate_geocode(data = road_관악_신림, location = 기점, source='google')
+
+#geom_point_ver
+ggmap(관악_신림_map)+geom_point(data = road_sl, aes(x=lon, y=lat), size=2, alpha =0.5, col = 'red') #alpha : 투명도
+
+
+#강동구, 강서구, 노원구, 영등포구
+
+ #강동구
+ road_강동_location <- mutate_geocode(data = road_강동, location = 기점, source = 'google')
+ head(road_강동_location)
+
+ #geom_point_ver
+ 강동_map <- get_googlemap('서울 특별시 강동구', maptype = 'roadmap', zoom = 13)
+
+ ggmap(강동_map)+geom_point(data = road_강동_location, aes(x=lon, y=lat), size=2, alpha =0.5, col = 'green') #alpha : 투명도
+
+ #강서구
+ road_강서_location <- mutate_geocode(data = road_강서, location = 기점, source = 'google')
+ head(road_강서_location)
+
+ #geom_point_ver
+ 강서_map <- get_googlemap('서울 특별시 강서구', maptype = 'roadmap', zoom = 13)
+
+ ggmap(강서_map)+geom_point(data = road_강서_location, aes(x=lon, y=lat), size=2, alpha =0.5, col = 'orange') #alpha : 투명도
+
+ #노원구
+ road_노원_location <- mutate_geocode(data = road_노원, location = 기점, source = 'google')
+ head(road_노원_location)
+
+ #geom_point_ver
+ 노원_map <- get_googlemap('서울 특별시 노원구', maptype = 'roadmap', zoom = 13)
+
+ ggmap(노원_map)+geom_point(data = road_노원_location, aes(x=lon, y=lat), size=2, alpha =0.5, col = 'purple') #alpha : 투명도
+
+ #영등포
+ road_영등포_location <- mutate_geocode(data = road_영등포, location = 기점, source = 'google')
+ head(road_영등포_location)
+
+ #geom_point_ver
+ 영등포_map <- get_googlemap('서울 특별시 영등포구', maptype = 'roadmap', zoom = 13)
+
+ ggmap(영등포_map)+geom_point(data = road_영등포_location, aes(x=lon, y=lat), size=2, alpha =0.5, col = 'pink') #alpha : 투명도
