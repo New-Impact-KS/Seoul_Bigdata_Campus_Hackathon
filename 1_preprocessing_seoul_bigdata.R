@@ -1,4 +1,7 @@
 
+# 2022년도 서울특별시 빅데이터 캠퍼스 공모전 
+# I. 데이터 전처리
+
 library(readr)
 library(readxl)
 library(dplyr)
@@ -13,23 +16,11 @@ library(corrplot)
 library(car)
 library(lm.beta)
 library(lmtest)
-'''
-    [Error]
-    library(installr)
-    check.for.updates.R()
-    install.R()
-'''
 library(ggplot2)
-RColorBrewer::display.brewer.all()
 library(RColorBrewer)
 library(cluster)
+library(hclust)
 library(factoextra)
-'''
-   [error]
-  library(hclust)
-  library(dbscan)
-'''
-
 
 
 
@@ -73,14 +64,14 @@ rm(crimeArea_19)
 
 '''
     [데이터 프레임 수정]
-    서울시 행정구 외 시군구 | 5대 강력범죄 외 범죄분류 열 삭제
-    2018년 지역별 범죄 빈도와 2019년 지역별 범죄 빈도의 평균값
-    
+    서울시 행정구 외 시군구 열 | 5대 강력범죄 외 범죄분류 열 삭제
+    2018년 지역별 범죄발생빈도와 2019년 지역별 범죄발생빈도의 평균값 합산한 행 파생
+    자치구명 열의 데이터 문자열을 00구 형식으로 수정
 '''
 
 
 
-# 2. 서울시 내국인 KT 생활이동 데이터 로드 > problem of secondary memory ####
+# 2. 서울시 내국인 KT 생활이동 데이터 로드 > 데이터 크기로 인한 보조기억장치 메모리 사용량 등 문제로 이용 철회 ####
 
 getwd()
 setwd("//98.44.9.103/seoul_bigdata/seoul_bigdata/행정동별 kt_202206")
@@ -89,7 +80,6 @@ ktPoligon <- read.table("교통폴리곤코드_행정동코드(반출불가).txt
 rm(ktPoligon)
 
 '''
-
 [2022-06-01 ~ 2022-06-31 일별 생활이동 데이터 ]
 
 setwd("//98.44.9.103/seoul_bigdata/seoul_bigdata/행정동별 kt_202206/202206")
@@ -123,40 +113,7 @@ ktMove_220627 <- read.table("202206_27_OUTPUT.txt", sep = "|", header = TRUE, fi
 ktMove_220628 <- read.table("202206_28_OUTPUT.txt", sep = "|", header = TRUE, fileEncoding = "UTF-8")
 ktMove_220629 <- read.table("202206_29_OUTPUT.txt", sep = "|", header = TRUE, fileEncoding = "UTF-8")
 ktMove_220630 <- read.table("202206_30_OUTPUT.txt", sep = "|", header = TRUE, fileEncoding = "UTF-8")
-
-ktPop_강남구 <- read.table("wlk_강남구_201801.txt", sep = ",", header = TRUE, fileEncoding = "UTF-8")
-ktPop_강동구 <- read.table("wlk_강동구_201801.txt", sep = ",", header = TRUE, fileEncoding = "UTF-8")
-ktPop_강북구 <- read.table("wlk_강북구_201801.txt", sep = ",", header = TRUE, fileEncoding = "UTF-8")
-ktPop_강서구 <- read.table("wlk_강서구_201801.txt", sep = ",", header = TRUE, fileEncoding = "UTF-8")
-ktPop_관악구 <- read.table("wlk_관악구_201801.txt", sep = ",", header = TRUE, fileEncoding = "UTF-8")
-ktPop_광진구 <- read.table("wlk_광진구_201801.txt", sep = ",", header = TRUE, fileEncoding = "UTF-8")
-ktPop_구로구 <- read.table("wlk_구로구_201801.txt", sep = ",", header = TRUE, fileEncoding = "UTF-8")
-ktPop_금천구 <- read.table("wlk_금천구_201801.txt", sep = ",", header = TRUE, fileEncoding = "UTF-8")
-
-ktPop_노원구 <- read.table("wlk_노원구_201801.txt", sep = ",", header = TRUE, fileEncoding = "UTF-8")
-ktPop_도봉구 <- read.table("wlk_도봉구_201801.txt", sep = ",", header = TRUE, fileEncoding = "UTF-8")
-ktPop_동대문구 <- read.table("wlk_동대문구_201801.txt", sep = ",", header = TRUE, fileEncoding = "UTF-8")
-ktPop_동작구 <- read.table("wlk_동작구_201801.txt", sep = ",", header = TRUE, fileEncoding = "UTF-8")
-
-ktPop_마포구 <- read.table("wlk_마포구_201801.txt", sep = ",", header = TRUE, fileEncoding = "UTF-8")
-ktPop_서대문구 <- read.table("wlk_서대문구_201801.txt", sep = ",", header = TRUE, fileEncoding = "UTF-8")
-ktPop_서초구 <- read.table("wlk_서초구_201801.txt", sep = ",", header = TRUE, fileEncoding = "UTF-8")
-ktPop_성동구 <- read.table("wlk_성동구_201801.txt", sep = ",", header = TRUE, fileEncoding = "UTF-8")
-ktPop_성북구 <- read.table("wlk_성북구_201801.txt", sep = ",", header = TRUE, fileEncoding = "UTF-8")
-ktPop_송파구 <- read.table("wlk_송파구_201801.txt", sep = ",", header = TRUE, fileEncoding = "UTF-8")
-
-ktPop_양천구 <- read.table("wlk_양천구_201801.txt", sep = ",", header = TRUE, fileEncoding = "UTF-8")
-ktPop_영등포구 <- read.table("wlk_영등포구_201801.txt", sep = ",", header = TRUE, fileEncoding = "UTF-8")
-ktPop_용산구 <- read.table("wlk_용산구_201801.txt", sep = ",", header = TRUE, fileEncoding = "UTF-8")
-ktPop_은평구 <- read.table("wlk_은평구_201801.txt", sep = ",", header = TRUE, fileEncoding = "UTF-8")
-
-ktPop_종로구 <- read.table("wlk_종로구_201801.txt", sep = ",", header = TRUE, fileEncoding = "UTF-8")
-ktPop_중구 <- read.table("wlk_중구_201801.txt", sep = ",", header = TRUE, fileEncoding = "UTF-8")
-ktPop_중랑구 <- read.table("wlk_중랑구_201801.txt", sep = ",", header = TRUE, fileEncoding = "UTF-8")
-
 '''
-
-
 
 
 
@@ -167,21 +124,22 @@ ktPopulation <-  read.table("TBDM_FLPOP_MONTH_201801.txt", sep = ",", header = T
 table(ktPopulation$HOUR)
 ktPopulation <- ktPopulation %>% filter(HOUR %in% c(20, 21, 22, 23, 0, 1, 2, 3, 4))
 ktPopulation <- ktPopulation %>% select(c(2, 3, 4, 7, 8))
+
 ktPopulation <- ktPopulation %>% group_by(SIGUNGU_NM, ADMI_CD, ADMI_NM) %>% summarise(sumPOP_CNT = sum(POP_CNT))
 table(ktPopulation$SIGUNGU_NM)
 table(ktPopulation$ADMI_NM)
 colnames(ktPopulation) <- c("자치구명", "행정동코드", "행정동명", "유동인구합계")
 
+ktPop_count_sgg <- ktPopulation %>% group_by(자치구명) %>% summarise(유동인구수 = sum(유동인구합계))
 
 '''
     [데이터 컬럼 삭제 목록]
     기준연월 | 성별 | 연령대 | 20시 ~ 4시 외 시간대 제거
     [데이터 프레임 수정]
-    행정동별 유동인구 수 합계
+    서울시 행정동별 유동인구 수 합계
+    [서브 데이터 프레임 생성]
+    서울시 자치구별 유동인구 수 합계
 '''
-
-ktPop_count_sgg <- ktPopulation %>% group_by(자치구명) %>% summarise(유동인구수 = sum(유동인구합계))
-
 
 
 
@@ -236,8 +194,6 @@ road2 <- road2 %>% relocate(자치구명, .after = 시군구코드)
 road2[is.na(road2$자치구명), ]
 
 road2_sgg <- road2 %>% group_by(자치구명, 시군구코드) %>% summarise(count = n())
-# road2 <- road2 %>% filter(시군구코드 != c("28245", "41195", "41199", "41110", "41181", "41450"))
-# [서울시 아닌 지역 제거] : 에러 코드
 
 which(road2$자치구명 %in% c("강북구", "금천구", "광진구"))
 road2 <- road2[-c(39796, 39797, 39798), ]
@@ -246,6 +202,7 @@ road2$자치구명 <- ifelse(road2$시군구코드 == "11215", "광진구", road
 road2$자치구명 <- ifelse(road2$시군구코드 == "11305", "강북구", road2$자치구명)
 road2$자치구명 <- ifelse(road2$시군구코드 == "11545", "금천구", road2$자치구명)
 road2 <- road2 %>% filter(!is.na(road2$자치구명))
+
 road2_sgg <- road2 %>% group_by(자치구명, 시군구코드) %>% summarise(count = n())
 table(road2$자치구명)
 
@@ -278,8 +235,8 @@ table(road2$자치구명)
 
 ''' 
     [에러 코드]
-    road2 <- full_join(road1, sigunguCode, by = "시군구코드")
-    road2 <- road2 %>% relocate(코드, .after = 시군구코드)
+    road2 <- road2 %>% filter(시군구코드 != c("28245", "41195", "41199", "41110", "41181", "41450"))
+    서울시 아닌 지역 제거
 '''
 
 road_count_sgg <- road2 %>% group_by(자치구명) %>% summarise(세로_막다른도로수 = n())
