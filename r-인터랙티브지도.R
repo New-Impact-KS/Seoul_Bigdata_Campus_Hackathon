@@ -9,7 +9,7 @@ library(leaflet)
 library(ggmap)
 
 road <- read.csv("road.csv")
-register_google(key = "AIzaSyDMLBeyvYGcL7sRnOusaEIcRHehy5gha1k")
+register_google(key = "# google_map_key #")
 
 which(is.na(road$기점)==TRUE)
 road <- road[-c( 954, 26151 ,26161 ,26198, 26233 ,26274, 26387, 26407, 26426, 26494, 26510, 39767, 39768, 39769),]
