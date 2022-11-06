@@ -331,7 +331,7 @@ library(ggmap)
 library(ggplot2)
 library(dplyr)
 road <- read.csv("road2.csv")
-register_google(key = "AIzaSyDMLBeyvYGcL7sRn0usaEIcRHehy5gha1k")
+register_google(key = "# google_map_key #")
 
 which(is.na(road$기점)==TRUE)
 road <- road[-c(954, 26151, 26161, 26198, 26233, 26274, 26387, 26407, 26426, 26494, 26510, 39767, 39768, 39769),]
